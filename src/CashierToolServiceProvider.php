@@ -3,6 +3,7 @@
 namespace Themsaid\CashierTool;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
 
 class CashierToolServiceProvider extends ServiceProvider
 {
@@ -15,9 +16,8 @@ class CashierToolServiceProvider extends ServiceProvider
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'nova-cashier-tool');
 
-        $this->app->booted(function () {
-            $this->routes();
-        });
+        $this->bootRoutes();
+        $this->publishConfig();
     }
 
     /**
@@ -27,31 +27,53 @@ class CashierToolServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__.'/../config/nova-cashier-manager.php' => config_path('nova-cashier-manager.php'),
-            ], 'horizon-config');
-        }
-
         $this->mergeConfigFrom(
             __DIR__.'/../config/nova-cashier-manager.php', 'nova-cashier-manager'
         );
     }
 
+    /**
+     * Boot the package routes.
+     *
+     * @return void
+     */
+    protected function bootRoutes()
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                // Your commands here, if any
+            ]);
+        }
+
+        $this->app->booted(function () {
+            $this->routes();
+        });
+    }
 
     /**
-     * Register the tool's routes.
+     * Define the package routes.
      *
      * @return void
      */
     protected function routes()
     {
-        if ($this->app->routesAreCached()) {
-            return;
-        }
 
-        \Route::middleware(['nova'])
+        Route::middleware(['nova'])
             ->prefix('nova-cashier-tool-api')
             ->group(__DIR__.'/routes.php');
+    }
+
+    /**
+     * Publish the configuration file.
+     *
+     * @return void
+     */
+    protected function publishConfig()
+    {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/nova-cashier-manager.php' => config_path('nova-cashier-manager.php'),
+            ], 'nova-cashier-manager-config');
+        }
     }
 }
